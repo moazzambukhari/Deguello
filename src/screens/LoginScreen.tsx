@@ -1,0 +1,263 @@
+import React, { useState } from 'react';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+import type { AuthStackParamList } from '../navigation/AuthStack';
+import { CommonActions } from '@react-navigation/native';
+
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+
+export default function LoginScreen({ navigation }: Props) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: Replace with actual API call
+      // Simulating successful login
+      await AsyncStorage.setItem('authToken', 'dummy_token_' + Date.now());
+      
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'MainStack' }],
+        }),
+      );
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top,
+            paddingBottom: Math.max(insets.bottom, 24),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces>
+        <Image
+          source={require('../assets/images/chees2.png')}
+          style={styles.topImage}
+          resizeMode="cover"
+        />
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Sign In</Text>
+
+          <Text style={styles.subtitle}>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus
+            a diam.
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Icon name="user" size={20} color="#8C90B8" />
+            <TextInput
+              placeholder="Username"
+              placeholderTextColor="#8C90B8"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Icon name="lock" size={20} color="#8C90B8" />
+            <TextInput
+              secureTextEntry={!showPassword}
+              placeholder="Password"
+              placeholderTextColor="#8C90B8"
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(prev => !prev)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Icon
+                name={showPassword ? 'eye' : 'eye-off'}
+                size={20}
+                color="#8C90B8"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={styles.forgot}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleLogin} activeOpacity={0.85} disabled={isLoading}>
+            <LinearGradient
+              colors={['#FF0000', '#B00000']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.signinBtn}>
+              <Text style={styles.signinText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.googleBtn} activeOpacity={0.85}>
+            <MaterialIcons name="g-mobiledata" size={35} color="#EA4335" />
+            <Text style={styles.googleText}>Continue with google</Text>
+            <Icon name="arrow-right" size={22} color="red" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <Text style={styles.footer}>
+              Don&apos;t have an account?{'\n'}
+              <Text style={styles.createNow}>Create Now</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <Image
+            source={require('../assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#050B4A',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  topImage: {
+    width: '100%',
+    height: 210,
+  },
+  contentContainer: {
+    backgroundColor: '#1A1D5D',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -20,
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 16,
+  },
+  title: {
+    fontSize: 27,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    color: '#D3D5EA',
+    marginTop: 10,
+    marginBottom: 30,
+    lineHeight: 25,
+    fontSize: 16,
+  },
+  inputContainer: {
+    height: 57,
+    // borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#8B8DB6',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    marginBottom: 15,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    color: '#fff',
+    fontSize: 16,
+  },
+  forgot: {
+    color: '#fff',
+    alignSelf: 'flex-end',
+    marginBottom: 25,
+    fontSize: 14,
+    fontWeight: 500,
+  },
+  signinBtn: {
+    height: 57,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signinText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 21,
+  },
+  googleBtn: {
+    height: 57,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  googleText: {
+    flex: 1,
+    marginHorizontal: 12,
+    color: '#111',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  footer: {
+    marginTop: 40,
+    textAlign: 'center',
+    color: '#fff',
+    lineHeight: 20,
+    fontSize: 16,
+  },
+  createNow: {
+    fontWeight: '700',
+  },
+  logo: {
+    width: 112,
+    height: 83,
+    alignSelf: 'center',
+    marginTop: 20,
+  },
+});
