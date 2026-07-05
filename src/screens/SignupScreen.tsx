@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,8 +9,9 @@ import {
   TouchableOpacity,
   View,
   Image,
+  ImageBackground,
+  Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -18,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { AuthStackParamList } from '../navigation/AuthStack';
-import { CommonActions } from '@react-navigation/native';
+import { AuthContext } from '../navigation/AuthContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -30,147 +31,158 @@ export default function SignupScreen({ navigation }: Props) {
   const [showPass, setShowPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
+  const { signIn } = useContext(AuthContext);
 
   const handleSignup = async () => {
     if (!fullName || !email || !phone || !password) {
-      alert('Please fill in all fields');
+      Alert.alert('Missing fields', 'Please fill in all fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // Simulating successful signup
-      await AsyncStorage.setItem('authToken', 'dummy_token_' + Date.now());
-      
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'MainStack' }],
-        }),
-      );
+      // Call signIn from AuthContext to set userToken
+      signIn();
+      // AppNavigator will automatically switch to MainStack
     } catch (error) {
       console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      Alert.alert('Signup failed', 'Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
+
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 24) },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        bounces>
-        <Image
-          source={require('../assets/images/chees.png')}
-          style={styles.topImage}
-          resizeMode="cover"
-        />
+      <ImageBackground
+        source={require('../assets/images/bg-login2.png')}
+        style={styles.bgImage}
+        resizeMode="cover"
+      >
 
-        <View style={styles.content}>
-          <Text style={styles.title}>Create Account</Text>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 24) },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces>
+          <Image
+            source={require('../assets/images/chees.png')}
+            style={styles.topImage}
+            resizeMode="cover"
+          />
+          <ImageBackground
+            source={require('../assets/images/bg-login2.png')}
+            style={styles.bgImage}
+            resizeMode="cover"
+          >
+            <View style={styles.content}>
+              <Text style={styles.title}>Create Account</Text>
 
-          <Text style={styles.subtitle}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus
-            a diam.
-          </Text>
+              <Text style={styles.subtitle}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus
+                a diam.
+              </Text>
 
-          <View style={styles.inputContainer}>
-            <Icon name="user" size={20} color="#9EA1C4" />
-            <TextInput
-              placeholder="Full Name"
-              placeholderTextColor="#9EA1C4"
-              value={fullName}
-              onChangeText={setFullName}
-              style={styles.input}
-            />
-          </View>
+              <View style={styles.inputContainer}>
+                <Icon name="user" size={20} color="#9EA1C4" />
+                <TextInput
+                  placeholder="Full Name"
+                  placeholderTextColor="#9EA1C4"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  style={styles.input}
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <Icon name="mail" size={20} color="#9EA1C4" />
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#9EA1C4"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
-          </View>
+              <View style={styles.inputContainer}>
+                <Icon name="mail" size={20} color="#9EA1C4" />
+                <TextInput
+                  placeholder="Email"
+                  placeholderTextColor="#9EA1C4"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={styles.input}
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <Icon name="phone" size={20} color="#9EA1C4" />
-            <TextInput
-              placeholder="Phone"
-              placeholderTextColor="#9EA1C4"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
-          </View>
+              <View style={styles.inputContainer}>
+                <Icon name="phone" size={20} color="#9EA1C4" />
+                <TextInput
+                  placeholder="Phone"
+                  placeholderTextColor="#9EA1C4"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <Icon name="lock" size={20} color="#9EA1C4" />
-            <TextInput
-              placeholder="Password"
-              secureTextEntry={!showPass}
-              placeholderTextColor="#9EA1C4"
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPass(prev => !prev)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Icon
-                name={showPass ? 'eye' : 'eye-off'}
-                size={20}
-                color="#9EA1C4"
-              />
-            </TouchableOpacity>
-          </View>
+              <View style={styles.inputContainer}>
+                <Icon name="lock" size={20} color="#9EA1C4" />
+                <TextInput
+                  placeholder="Password"
+                  secureTextEntry={!showPass}
+                  placeholderTextColor="#9EA1C4"
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.input}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPass(prev => !prev)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Icon
+                    name={showPass ? 'eye' : 'eye-off'}
+                    size={20}
+                    color="#9EA1C4"
+                  />
+                </TouchableOpacity>
+              </View>
 
-          <TouchableOpacity onPress={handleSignup} activeOpacity={0.85} disabled={isLoading}>
-            <LinearGradient
-              colors={['#FF0000', '#C70000']}
-              style={styles.signupBtn}>
-              <Text style={styles.signupText}>{isLoading ? 'Creating Account...' : 'Create Account'}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={handleSignup} activeOpacity={0.85} disabled={isLoading}>
+                <LinearGradient
+                  colors={['#FF0000', '#C70000']}
+                  style={styles.signupBtn}>
+                  <Text style={styles.signupText}>{isLoading ? 'Creating Account...' : 'Create Account'}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.googleBtn} activeOpacity={0.85}>
-            <MaterialIcons name="g-mobiledata" size={35} color="#EA4335" />
-            <Text style={styles.googleText}>Continue with google</Text>
-            <Icon name="arrow-right" size={22} color="red" />
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.googleBtn} activeOpacity={0.85}>
+                <MaterialIcons name="g-mobiledata" size={35} color="#EA4335" />
+                <Text style={styles.googleText}>Continue with google</Text>
+                <Icon name="arrow-right" size={22} color="red" />
+              </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.footerText}>
-              Already have an account?{'\n'}
-              <Text style={styles.signin}>Sign In Now</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.footerText}>
+                  Already have an account?{'\n'}
+                  <Text style={styles.signin}>Sign In Now</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
+        </ScrollView>
+      </ImageBackground>
+
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  bgImage: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#11164A',
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,
@@ -180,12 +192,12 @@ const styles = StyleSheet.create({
   },
   topImage: {
     width: '100%',
-    height: 220,
+    height: 250,
     // borderBottomLeftRadius: 30,
     // borderBottomRightRadius: 30,
   },
   content: {
-    backgroundColor: '#1A1D5D',
+    // backgroundColor: '#1A1D5D',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     marginTop: -20,

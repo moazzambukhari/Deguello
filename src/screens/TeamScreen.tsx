@@ -1,4 +1,5 @@
-import React from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,8 +7,18 @@ import {
     ImageBackground,
     Image,
 } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-const TeamScreen = () => {
+type Props = NativeStackScreenProps<any, 'Team'>;
+
+const TeamScreen = ({ navigation }: Props) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            navigation.navigate('Game');
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [navigation]);
     return (
         <ImageBackground
             source={require('../assets/images/team-bg.png')}
@@ -97,8 +108,8 @@ const styles = StyleSheet.create({
 
     teamTitle: {
         color: '#fff',
-        fontSize: 42,
-        fontWeight: '700',
+        fontSize: 30,
+        fontWeight: 'bold',
         marginBottom: 20,
     },
 
@@ -154,7 +165,7 @@ const styles = StyleSheet.create({
     playerName: {
         color: '#fff',
         fontWeight: '700',
-        fontSize: 13,
+        fontSize: 14,
     },
 
     playerDetails: {

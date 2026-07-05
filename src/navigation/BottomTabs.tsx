@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -12,6 +13,7 @@ import { View } from 'react-native';
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
+    const insets = useSafeAreaInsets();
     return (
         <Tab.Navigator
             initialRouteName="Home"
@@ -22,13 +24,14 @@ export default function BottomTabs() {
                     position: 'absolute',
                     left: 20,
                     right: 20,
-                    bottom: 15,
+                    bottom: insets.bottom + 8,
                     height: 65,
                     borderRadius: 35,
                     backgroundColor: '#D90015',
                     borderTopWidth: 0,
                     elevation: 10,
                     paddingTop: 5,
+                    paddingBottom: insets.bottom,
                 },
 
                 tabBarActiveTintColor: '#fff',

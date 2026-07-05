@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,8 +10,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -18,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { AuthStackParamList } from '../navigation/AuthStack';
-import { CommonActions } from '@react-navigation/native';
+import { AuthContext } from '../navigation/AuthContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -28,138 +29,144 @@ export default function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
+  const { signIn } = useContext(AuthContext);
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      alert('Please fill in all fields');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // Simulating successful login
-      await AsyncStorage.setItem('authToken', 'dummy_token_' + Date.now());
-      
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'MainStack' }],
-        }),
-      );
+      signIn();
+      // AppNavigator will automatically switch to MainStack when userToken is set
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed. Please try again.');
+      Alert.alert('Login failed', 'Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: insets.top,
-            paddingBottom: Math.max(insets.bottom, 24),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        bounces>
-        <Image
-          source={require('../assets/images/chees2.png')}
-          style={styles.topImage}
-          resizeMode="cover"
-        />
-
-        <View style={styles.contentContainer}>
-          <Text style={styles.title}>Sign In</Text>
-
-          <Text style={styles.subtitle}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus
-            a diam.
-          </Text>
-
-          <View style={styles.inputContainer}>
-            <Icon name="user" size={20} color="#8C90B8" />
-            <TextInput
-              placeholder="Username"
-              placeholderTextColor="#8C90B8"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              style={styles.input}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="lock" size={20} color="#8C90B8" />
-            <TextInput
-              secureTextEntry={!showPassword}
-              placeholder="Password"
-              placeholderTextColor="#8C90B8"
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(prev => !prev)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Icon
-                name={showPassword ? 'eye' : 'eye-off'}
-                size={20}
-                color="#8C90B8"
-              />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.forgot}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleLogin} activeOpacity={0.85} disabled={isLoading}>
-            <LinearGradient
-              colors={['#FF0000', '#B00000']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.signinBtn}>
-              <Text style={styles.signinText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.googleBtn} activeOpacity={0.85}>
-            <MaterialIcons name="g-mobiledata" size={35} color="#EA4335" />
-            <Text style={styles.googleText}>Continue with google</Text>
-            <Icon name="arrow-right" size={22} color="red" />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text style={styles.footer}>
-              Don&apos;t have an account?{'\n'}
-              <Text style={styles.createNow}>Create Now</Text>
-            </Text>
-          </TouchableOpacity>
-
+    <ImageBackground
+      source={require('../assets/images/bg-login2.png')}
+      style={styles.bgImage}
+      resizeMode="cover"
+    >
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: insets.top,
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces>
           <Image
-            source={require('../assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
+            source={require('../assets/images/chees2.png')}
+            style={styles.topImage}
+            resizeMode="cover"
           />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.contentContainer}>
+            <Text style={styles.title}>Sign In</Text>
+
+            <Text style={styles.subtitle}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut cursus
+              a diam.
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <Icon name="user" size={20} color="#8C90B8" />
+              <TextInput
+                placeholder="Username"
+                placeholderTextColor="#8C90B8"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Icon name="lock" size={20} color="#8C90B8" />
+              <TextInput
+                secureTextEntry={!showPassword}
+                placeholder="Password"
+                placeholderTextColor="#8C90B8"
+                value={password}
+                onChangeText={setPassword}
+                style={styles.input}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(prev => !prev)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Icon
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={20}
+                  color="#8C90B8"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={styles.forgot}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleLogin} activeOpacity={0.85} disabled={isLoading}>
+              <LinearGradient
+                colors={['#FF0000', '#B00000']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.signinBtn}>
+                <Text style={styles.signinText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.googleBtn} activeOpacity={0.85}>
+              <MaterialIcons name="g-mobiledata" size={35} color="#EA4335" />
+              <Text style={styles.googleText}>Continue with google</Text>
+              <Icon name="arrow-right" size={22} color="red" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+              <Text style={styles.footer}>
+                Don&apos;t have an account?{'\n'}
+                <Text style={styles.createNow}>Create Now</Text>
+              </Text>
+            </TouchableOpacity>
+
+            <Image
+              source={require('../assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <ImageBackground
+            source={require('../assets/images/bg-login2.png')}
+            style={styles.bgImage}
+            resizeMode="cover"
+          >
+
+
+          </ImageBackground>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  bgImage: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#050B4A',
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,
@@ -172,7 +179,7 @@ const styles = StyleSheet.create({
     height: 210,
   },
   contentContainer: {
-    backgroundColor: '#1A1D5D',
+    // backgroundColor: '#1A1D5D',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     marginTop: -20,

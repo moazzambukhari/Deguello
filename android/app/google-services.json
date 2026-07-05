@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "677875967132",
+    "project_id": "deguello-6ff3d",
+    "storage_bucket": "deguello-6ff3d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:677875967132:android:b31aca5c5a9cb6c5d9b959",
+        "android_client_info": {
+          "package_name": "com.deguello"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNgpdYWk28ikL1KzyEWlRJFEECOd4kLJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

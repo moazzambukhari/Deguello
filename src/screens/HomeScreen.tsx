@@ -9,9 +9,12 @@ import {
   Image,
   ScrollView,
   ImageBackground,
+  Dimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -27,7 +30,7 @@ export default function HomeScreen() {
             style={styles.logo}
           />
 
-          <TouchableOpacity onPress={() => { navigation.navigate("Settings") }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile' as never)}>
             <Image
               source={require('../assets/images/avatar2.png')}
               style={styles.avatar}
@@ -47,7 +50,10 @@ export default function HomeScreen() {
             imageStyle={styles.heroBackgroundImage}
           >
             <View style={{ flex: 1 }}>
-              <TouchableOpacity style={styles.playBtn}>
+              <TouchableOpacity
+                style={styles.playBtn}
+                onPress={() => navigation.navigate('Lobby' as never)}
+              >
                 <Text style={styles.playText}>Play Now</Text>
               </TouchableOpacity>
             </View>
@@ -60,7 +66,7 @@ export default function HomeScreen() {
             colors={['#FF0000', '#A8002A']}
             style={styles.actionCard}>
 
-            <View style={{ height: 100 }}>
+            <View style={{ minHeight: width < 350 ? 80 : 100, justifyContent: 'flex-start' }}>
               <Text style={styles.cardTitle}>Play vs AI</Text>
               <Text style={styles.cardSubtitle}>
                 Challenge the{'\n'}Computer
@@ -68,7 +74,7 @@ export default function HomeScreen() {
             </View>
 
 
-            <TouchableOpacity style={styles.arrowBtn}>
+            <TouchableOpacity style={styles.arrowBtn} onPress={() => navigation.navigate("Team")}>
               <Ionicons name="arrow-forward" size={20} color="#000" />
             </TouchableOpacity>
 
@@ -82,13 +88,13 @@ export default function HomeScreen() {
             colors={['#FF0000', '#A8002A']}
             style={styles.actionCard}>
 
-            <View style={{ height: 100 }}>
+            <View style={{ minHeight: width < 350 ? 80 : 100, justifyContent: 'flex-start' }}>
               <Text style={styles.cardTitle}>Practice{'\n'}Mode</Text>
               <Text style={styles.cardSubtitle}>Improve Your Skills</Text>
             </View>
 
 
-            <TouchableOpacity style={styles.arrowBtn}>
+            <TouchableOpacity style={styles.arrowBtn} onPress={() => navigation.navigate("Team")}>
               <Ionicons name="arrow-forward" size={20} color="#000" />
             </TouchableOpacity>
 
@@ -107,19 +113,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingBottom: 100
+    paddingBottom: 100,
   },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: width < 350 ? 12 : 20,
     marginTop: 30,
   },
 
   logo: {
-    width: 90,
-    height: 90,
+    width: width < 350 ? 70 : 90,
+    height: width < 350 ? 70 : 90,
     resizeMode: 'contain',
   },
 
@@ -130,11 +136,11 @@ const styles = StyleSheet.create({
   },
 
   heroCard: {
-    marginHorizontal: 20,
+    marginHorizontal: width < 350 ? 12 : 20,
     marginTop: 20,
     borderRadius: 30,
     overflow: 'hidden', // important
-    minHeight: 180,
+    minHeight: width < 350 ? 150 : 180,
   },
 
   heroBackground: {
@@ -157,7 +163,7 @@ const styles = StyleSheet.create({
   playBtn: {
     marginTop: 15,
     backgroundColor: '#E60012',
-    width: 100,
+    width: width < 350 ? 80 : 100,
     height: 40,
     borderRadius: 15,
     position: 'absolute',
@@ -169,7 +175,7 @@ const styles = StyleSheet.create({
   playText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: width < 350 ? 13 : 16,
   },
 
   heroImage: {
@@ -178,43 +184,46 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   heroImage1: {
-    width: 120,
-    height: 120,
+    width: width < 350 ? 90 : 120,
+    height: width < 350 ? 90 : 120,
     resizeMode: 'cover',
-    marginTop: 20
+    marginTop: 10
   },
 
   cardsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 20,
+    marginHorizontal: width < 350 ? 12 : 20,
     marginTop: 15,
+    gap: width < 350 ? 8 : 12,
   },
 
   actionCard: {
     width: '48%',
-    height: 320,
+    height: width < 350 ? 280 : 320,
     borderRadius: 30,
-    padding: 18,
+    padding: width < 350 ? 12 : 18,
   },
 
   cardTitle: {
     color: '#fff',
-    fontSize: 21,
+    fontSize: width < 350 ? 16 : width < 380 ? 18 : 21,
     fontWeight: 'bold',
+    flexShrink: 1,
   },
 
   cardSubtitle: {
     color: '#fff',
     marginTop: 5,
-    fontSize: 15,
-    fontWeight: 'regular',
-
+    fontSize: width < 350 ? 12 : width < 380 ? 13 : 15,
+    fontWeight: '500',
+    flexShrink: 1,
+    lineHeight: width < 350 ? 16 : width < 380 ? 17 : 20,
   },
 
   arrowBtn: {
     marginTop: 20,
-    width: 60,
+    width: width < 350 ? 50 : 60,
     height: 28,
     backgroundColor: '#fff',
     borderRadius: 20,

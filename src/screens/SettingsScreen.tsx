@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
     View,
     Text,
@@ -9,8 +9,17 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../navigation/AuthContext';
 
 const SettingsScreen = () => {
+    const { signOut } = useContext(AuthContext);
+    const navigation = useNavigation();
+
+    const handleLogout = () => {
+        signOut();
+    };
+
     return (
         <LinearGradient
             colors={['#00084D', '#0010A0']}
@@ -45,8 +54,11 @@ const SettingsScreen = () => {
                                 consectetur adipiscing elit.
                             </Text>
 
-                            <TouchableOpacity style={styles.editBtn}>
-                                <Text style={styles.editText}>Edit</Text>
+                            <TouchableOpacity
+                                style={styles.editBtn}
+                                onPress={() => navigation.navigate('Profile' as never)}
+                            >
+                                <Text style={styles.editText}>View Profile</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -66,7 +78,10 @@ const SettingsScreen = () => {
                             </Text>
                         </View>
 
-                        <TouchableOpacity style={styles.viewBtn}>
+                        <TouchableOpacity
+                            style={styles.viewBtn}
+                            onPress={() => navigation.navigate('Profile' as never)}
+                        >
                             <View style={styles.innerShadow} />
                             <Text style={styles.viewText}>View</Text>
                         </TouchableOpacity>
@@ -103,6 +118,23 @@ const SettingsScreen = () => {
                         />
                     </View>
                 </LinearGradient>
+
+                {/* Logout Button */}
+                <TouchableOpacity
+                    onPress={handleLogout}
+                    style={styles.logoutBtn}
+                    activeOpacity={0.7}
+                >
+                    <LinearGradient
+                        colors={['#FF0000', '#B00000']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.logoutGradient}
+                    >
+                        <Ionicons name="log-out" size={24} color="#fff" />
+                        <Text style={styles.logoutText}>Logout</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -279,5 +311,24 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    logoutBtn: {
+        marginHorizontal: 20,
+        marginTop: 25,
+        borderRadius: 18,
+        overflow: 'hidden',
+    },
+    logoutGradient: {
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    logoutText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '700',
+        marginLeft: 10,
     },
 });

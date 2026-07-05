@@ -1,31 +1,15 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SplashScreen from '../screens/SplashScreen';
 import MainStack from './MainStack';
 import AuthStack from './AuthStack';
+import { AuthContext } from './AuthContext';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-
-  React.useEffect(() => {
-    const bootstrapAsync = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        setIsLoggedIn(!!token);
-      } catch (e) {
-        console.error('Failed to restore token', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    bootstrapAsync();
-  }, []);
+  const { isLoading, userToken } = React.useContext(AuthContext);
 
   if (isLoading) {
     return <SplashScreen />;
@@ -36,7 +20,7 @@ export default function AppNavigator() {
       screenOptions={{
         headerShown: false,
       }}>
-      {isLoggedIn ? (
+      {userToken ? (
         <Stack.Screen
           name="MainStack"
           component={MainStack}
