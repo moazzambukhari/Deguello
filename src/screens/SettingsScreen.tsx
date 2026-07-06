@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import {
     View,
     Text,
@@ -6,18 +6,68 @@ import {
     ScrollView,
     Image,
     TouchableOpacity,
+    Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../navigation/AuthContext';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 const SettingsScreen = () => {
     const { signOut } = useContext(AuthContext);
     const navigation = useNavigation();
+    const [userData, setUserData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const handleLogout = () => {
-        signOut();
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const uid = auth().currentUser?.uid;
+
+                if (!uid) return;
+
+                const doc = await firestore()
+                    .collection('users')
+                    .doc(uid)
+                    .get();
+
+                if (doc.exists()) {
+                    setUserData(doc.data());
+                }
+            } catch (e) {
+                console.log(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUser();
+    }, []);
+
+    if (loading) {
+        return (
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+
+    const handleLogout = async () => {
+        try {
+            await auth().signOut(); // Firebase logout
+
+            signOut(); // Redux/AuthContext logout
+        } catch (error) {
+            console.log(error);
+            Alert.alert('Error', 'Logout failed.');
+        }
     };
 
     return (
@@ -47,11 +97,16 @@ const SettingsScreen = () => {
                         </View>
 
                         <View style={styles.infoContainer}>
-                            <Text style={styles.title}>Personal Info</Text>
+                            <Text style={styles.title}>
+                                {userData?.fullName}
+                            </Text>
 
                             <Text style={styles.description}>
-                                Lorem ipsum dolor sit amet,
-                                consectetur adipiscing elit.
+                                {userData?.email}
+                            </Text>
+
+                            <Text style={styles.description}>
+                                {userData?.phone}
                             </Text>
 
                             <TouchableOpacity
@@ -65,7 +120,7 @@ const SettingsScreen = () => {
                 </LinearGradient>
 
                 {/* History Card */}
-                <LinearGradient
+                {/* <LinearGradient
                     colors={['#009DFF', '#005FB9']}
                     style={styles.historyCard}
                 >
@@ -98,10 +153,10 @@ const SettingsScreen = () => {
                             style={styles.historyImage}
                         />
                     </View>
-                </LinearGradient>
+                </LinearGradient> */}
 
                 {/* About Card */}
-                <LinearGradient
+                {/* <LinearGradient
                     colors={['#009DFF', '#005FB9']}
                     style={styles.aboutCard}
                 >
@@ -117,7 +172,7 @@ const SettingsScreen = () => {
                             style={styles.boardImage}
                         />
                     </View>
-                </LinearGradient>
+                </LinearGradient> */}
 
                 {/* Logout Button */}
                 <TouchableOpacity
@@ -205,7 +260,7 @@ const styles = StyleSheet.create({
 
     editText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: '700',
     },
 

@@ -20,6 +20,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { AuthStackParamList } from '../navigation/AuthStack';
 import { AuthContext } from '../navigation/AuthContext';
+import { signUp } from '../firebase/auth';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -35,23 +36,64 @@ export default function SignupScreen({ navigation }: Props) {
 
   const handleSignup = async () => {
     if (!fullName || !email || !phone || !password) {
-      Alert.alert('Missing fields', 'Please fill in all fields');
+      Alert.alert('Missing Fields', 'Please fill all fields.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert(
+        'Weak Password',
+        'Password should be at least 6 characters.',
+      );
       return;
     }
 
     setIsLoading(true);
+
     try {
-      // Call signIn from AuthContext to set userToken
+      const user = await signUp(
+        fullName,
+        email.trim(),
+        phone.trim(),
+        password,
+      );
+
+      console.log('Firebase User:', user.uid);
+
+      // If your AuthContext manages authentication state,
+      // call signIn() or update it here.
       signIn();
-      // AppNavigator will automatically switch to MainStack
-    } catch (error) {
-      console.error('Signup error:', error);
-      Alert.alert('Signup failed', 'Please try again.');
+
+      Alert.alert('Success', 'Account created successfully.');
+    } catch (error: any) {
+      console.log(error);
+
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          Alert.alert(
+            'Email Already Exists',
+            'This email is already registered.',
+          );
+          break;
+
+        case 'auth/invalid-email':
+          Alert.alert('Invalid Email', 'Please enter a valid email.');
+          break;
+
+        case 'auth/weak-password':
+          Alert.alert(
+            'Weak Password',
+            'Password should be at least 6 characters.',
+          );
+          break;
+
+        default:
+          Alert.alert('Signup Failed', error.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
 
     <KeyboardAvoidingView

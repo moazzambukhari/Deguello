@@ -1,36 +1,47 @@
-import React, { createContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { signIn as signInAction, signOut as signOutAction } from '../store/authSlice';
-import type { RootState } from '../store/store';
+import React, { createContext, useEffect, useState } from 'react';
+import auth from '@react-native-firebase/auth';
 
 type AuthContextType = {
-    signIn: () => void;
-    signOut: () => void;
-    isLoading: boolean;
     userToken: string | null;
+    isLoading: boolean;
+    signOut: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType>({
-    signIn: () => { },
-    signOut: () => { },
-    isLoading: true,
     userToken: null,
+    isLoading: true,
+    signOut: async () => { },
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const dispatch = useDispatch();
-    const { userToken, isLoading } = useSelector((state: RootState) => state.auth);
+    const [userToken, setUserToken] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSignIn = () => {
-        dispatch(signInAction());
-    };
+    useEffect(() => {
+        const unsubscribe = auth().onAuthStateChanged(user => {
+            if (user) {
+                setUserToken(user.uid);
+            } else {
+                setUserToken(null);
+            }
 
-    const handleSignOut = () => {
-        dispatch(signOutAction());
+            setIsLoading(false);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const signOut = async () => {
+        await auth().signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ signIn: handleSignIn, signOut: handleSignOut, isLoading, userToken }}>
+        <AuthContext.Provider
+            value={{
+                userToken,
+                isLoading,
+                signOut,
+            }}>
             {children}
         </AuthContext.Provider>
     );

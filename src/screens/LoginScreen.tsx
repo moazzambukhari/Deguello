@@ -20,11 +20,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { AuthStackParamList } from '../navigation/AuthStack';
 import { AuthContext } from '../navigation/AuthContext';
+import auth from '@react-native-firebase/auth';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,13 +33,52 @@ export default function LoginScreen({ navigation }: Props) {
   const { signIn } = useContext(AuthContext);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter email and password.');
+      return;
+    }
+
     setIsLoading(true);
+
     try {
-      signIn();
-      // AppNavigator will automatically switch to MainStack when userToken is set
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Login failed', 'Please try again.');
+      const userCredential = await auth().signInWithEmailAndPassword(
+        email.trim(),
+        password,
+      );
+
+      console.log('Logged in:', userCredential.user.uid);
+
+      // Update AuthContext
+      // signIn();
+
+      Alert.alert('Success', 'Login Successful!');
+    } catch (error: any) {
+      console.log(error);
+
+      switch (error.code) {
+        case 'auth/invalid-email':
+          Alert.alert('Error', 'Invalid email address.');
+          break;
+
+        case 'auth/user-not-found':
+          Alert.alert('Error', 'No account found with this email.');
+          break;
+
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          Alert.alert('Error', 'Incorrect email or password.');
+          break;
+
+        case 'auth/too-many-requests':
+          Alert.alert(
+            'Error',
+            'Too many login attempts. Please try again later.',
+          );
+          break;
+
+        default:
+          Alert.alert('Login Failed', error.message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,10 +122,11 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.inputContainer}>
               <Icon name="user" size={20} color="#8C90B8" />
               <TextInput
-                placeholder="Username"
+                placeholder="Email"
                 placeholderTextColor="#8C90B8"
-                value={username}
-                onChangeText={setUsername}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 style={styles.input}
               />
