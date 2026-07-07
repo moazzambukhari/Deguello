@@ -10,18 +10,53 @@ import {
   ScrollView,
   ImageBackground,
   Dimensions,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { createOrJoinMatch } from '../firebase/matches';
+import { getCurrentUserId, getUserDocument } from '../firebase/users';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+
+  // Play vs AI: create a room filled with AI opponents (host + 3 AI = ready),
+  // then hand off to the Team screen with the real matchId.
+  const handlePlayVsAi = async () => {
+    try {
+      const uid = getCurrentUserId();
+      if (!uid) {
+        Alert.alert('Error', 'Please login first.');
+        return;
+      }
+
+      const user = await getUserDocument(uid);
+      if (!user) {
+        Alert.alert('Error', 'User profile not found.');
+        return;
+      }
+
+      const matchId = await createOrJoinMatch(user, 'private', {
+        visibility: 'private',
+        aiDifficulty: 'medium',
+      });
+
+      navigation.navigate('Team', { matchId });
+    } catch (e: any) {
+      console.log('AI MATCH ERROR:', e);
+      console.log('AI MATCH ERROR MESSAGE:', e?.message);
+
+      Alert.alert('AI Error', e?.message ?? JSON.stringify(e));
+    }
+  };
+
   return (
     <LinearGradient
       colors={['#00146D', '#001A80', '#00146D']}
-      style={styles.container}>
+      style={styles.container}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -30,13 +65,14 @@ export default function HomeScreen() {
             style={styles.logo}
           />
 
-          <TouchableOpacity onPress={() => navigation.navigate('Profile' as never)}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile' as never)}
+          >
             <Image
               source={require('../assets/images/avatar2.png')}
               style={styles.avatar}
             />
           </TouchableOpacity>
-
         </View>
 
         {/* Hero Card */}
@@ -64,17 +100,21 @@ export default function HomeScreen() {
         <View style={styles.cardsRow}>
           <LinearGradient
             colors={['#FF0000', '#A8002A']}
-            style={styles.actionCard}>
-
-            <View style={{ minHeight: width < 350 ? 80 : 100, justifyContent: 'flex-start' }}>
+            style={styles.actionCard}
+          >
+            <View
+              style={{
+                minHeight: width < 350 ? 80 : 100,
+                justifyContent: 'flex-start',
+              }}
+            >
               <Text style={styles.cardTitle}>Play vs AI</Text>
               <Text style={styles.cardSubtitle}>
                 Challenge the{'\n'}Computer
               </Text>
             </View>
 
-
-            <TouchableOpacity style={styles.arrowBtn} onPress={() => navigation.navigate("Team")}>
+            <TouchableOpacity style={styles.arrowBtn} onPress={handlePlayVsAi}>
               <Ionicons name="arrow-forward" size={20} color="#000" />
             </TouchableOpacity>
 
@@ -86,15 +126,24 @@ export default function HomeScreen() {
 
           <LinearGradient
             colors={['#FF0000', '#A8002A']}
-            style={styles.actionCard}>
-
-            <View style={{ minHeight: width < 350 ? 80 : 100, justifyContent: 'flex-start' }}>
+            style={styles.actionCard}
+          >
+            <View
+              style={{
+                minHeight: width < 350 ? 80 : 100,
+                justifyContent: 'flex-start',
+              }}
+            >
               <Text style={styles.cardTitle}>Practice{'\n'}Mode</Text>
               <Text style={styles.cardSubtitle}>Improve Your Skills</Text>
             </View>
 
-
-            <TouchableOpacity style={styles.arrowBtn} onPress={() => navigation.navigate("Team")}>
+            <TouchableOpacity
+              style={styles.arrowBtn}
+              onPress={() =>
+                (navigation as any).navigate('Game', { mode: 'practice' })
+              }
+            >
               <Ionicons name="arrow-forward" size={20} color="#000" />
             </TouchableOpacity>
 
@@ -105,7 +154,6 @@ export default function HomeScreen() {
           </LinearGradient>
         </View>
       </ScrollView>
-
     </LinearGradient>
   );
 }
@@ -187,7 +235,7 @@ const styles = StyleSheet.create({
     width: width < 350 ? 90 : 120,
     height: width < 350 ? 90 : 120,
     resizeMode: 'cover',
-    marginTop: 10
+    marginTop: 10,
   },
 
   cardsRow: {
@@ -230,6 +278,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-
 });

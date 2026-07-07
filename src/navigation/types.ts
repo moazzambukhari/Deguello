@@ -1,4 +1,5 @@
 import type { PlayerInfo } from '../components/board/types';
+import type { GameMode } from '../game/types';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -11,7 +12,11 @@ export type MainStackParamList = {
   Team: { matchId: string };
   Lobby: undefined;
   Profile: undefined;
-  Game: { matchId: string; players: PlayerInfo[] };
+  Game: {
+    matchId?: string;
+    players?: PlayerInfo[];
+    mode?: GameMode;
+  };
   MatchResult: undefined;
   AddVideo: undefined;
 };

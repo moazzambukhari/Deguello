@@ -7,5 +7,7 @@ export * from './promotion';
 export * from './applyMove';
 export * from './getValidMoves';
 export * from './initialState';
+export * from './helpers';
+export * from './useGameController';
 export * from './sync';
 export { getValidMoves } from './moves';

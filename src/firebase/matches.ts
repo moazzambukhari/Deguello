@@ -24,14 +24,71 @@ const AI_NAMES = ['AI Strategist', 'AI Commander', 'AI Tactician'];
 const generateRoomCode = () =>
   Math.random().toString(36).slice(2, 8).toUpperCase();
 
+/** Firestore rejects `undefined` — strip optional fields so payloads stay JSON-safe. */
+const toSerializableMove = (move: Move): Move => {
+  const serialized: Move = {
+    pieceId: move.pieceId,
+    from: { file: move.from.file, rank: move.from.rank },
+    to: { file: move.to.file, rank: move.to.rank },
+    house: move.house,
+    createdAt: move.createdAt,
+  };
+
+  if (move.capturedPieceId !== undefined) {
+    serialized.capturedPieceId = move.capturedPieceId;
+  }
+
+  return serialized;
+};
+
+const toSerializableBoardState = (boardState: BoardPiece[]): BoardPiece[] =>
+  boardState.map(piece => {
+    const serialized: BoardPiece = {
+      id: piece.id,
+      house: piece.house,
+      type: piece.type,
+      file: piece.file,
+      rank: piece.rank,
+    };
+
+    if (piece.hasMoved !== undefined) {
+      serialized.hasMoved = piece.hasMoved;
+    }
+
+    if (piece.isCaptured !== undefined) {
+      serialized.isCaptured = piece.isCaptured;
+    }
+
+    if (piece.promoted !== undefined) {
+      serialized.promoted = piece.promoted;
+    }
+
+    return serialized;
+  });
+
+const getNextTurn = (turnOrder: House[], currentTurn: House): House => {
+  const currentIndex = turnOrder.indexOf(currentTurn);
+
+  if (currentIndex === -1 || turnOrder.length === 0) {
+    throw new Error('Invalid turn order.');
+  }
+
+  return turnOrder[(currentIndex + 1) % turnOrder.length];
+};
+
+const buildInitialBoardState = (): BoardPiece[] =>
+  toSerializableBoardState(createInitialSetup());
+
 const toMatchPlayer = (
   user: Pick<UserDocument, 'uid' | 'fullName' | 'avatar'>,
   house: House,
   isAi = false,
 ): MatchPlayer => ({
   uid: user.uid,
-  name: user.fullName,
-  avatar: user.avatar,
+  // Firestore rejects `undefined` — fall back to safe defaults if the user
+  // document is missing a name or avatar.
+  name: user.fullName ?? 'Player',
+  avatar: user.avatar ?? '',
   house,
   isAi,
 });
@@ -86,7 +143,7 @@ export const createMatch = async (
     roomCode: visibility === 'private' ? generateRoomCode() : null,
     currentTurn: TURN_ORDER[0],
     turnOrder: TURN_ORDER,
-    boardState: createInitialSetup(),
+    boardState: buildInitialBoardState(),
     winner: null,
     moveHistory: [],
     createdAt: firestore.FieldValue.serverTimestamp(),
@@ -102,6 +159,8 @@ export const makeMove = async (
   move: Move,
 ) => {
   const ref = matchesCollection().doc(matchId);
+  const serializedMove = toSerializableMove(move);
+  const serializedBoardState = toSerializableBoardState(boardState);
 
   await firestore().runTransaction(async transaction => {
     const snap = await transaction.get(ref);
@@ -112,20 +171,22 @@ export const makeMove = async (
 
     const match = snap.data() as MatchDocument;
 
-    // Sirf jis player ki turn hai woh move kar sakta hai
+    if (match.status !== 'in_progress') {
+      throw new Error('Match is not in progress.');
+    }
+
+    // Authoritative turn check — rejects stale or out-of-order moves.
     if (match.currentTurn !== move.house) {
       throw new Error("It's not your turn.");
     }
 
-    const currentIndex = match.turnOrder.indexOf(match.currentTurn);
-
-    const nextTurn =
-      match.turnOrder[(currentIndex + 1) % match.turnOrder.length];
+    const nextTurn = getNextTurn(match.turnOrder, match.currentTurn);
+    const nextMoveHistory = [...(match.moveHistory ?? []), serializedMove];
 
     transaction.update(ref, {
-      boardState,
+      boardState: serializedBoardState,
       currentTurn: nextTurn,
-      moveHistory: firestore.FieldValue.arrayUnion(move),
+      moveHistory: nextMoveHistory,
       updatedAt: firestore.FieldValue.serverTimestamp(),
     });
   });
@@ -265,13 +326,24 @@ export const startMatch = async (matchId: string) => {
 };
 
 export const resetMatch = async (matchId: string) => {
-  await matchesCollection().doc(matchId).update({
-    boardState: createInitialSetup(),
-    currentTurn: TURN_ORDER[0],
-    winner: null,
-    moveHistory: [],
-    status: 'in_progress',
-    updatedAt: firestore.FieldValue.serverTimestamp(),
+  const ref = matchesCollection().doc(matchId);
+
+  await firestore().runTransaction(async transaction => {
+    const snap = await transaction.get(ref);
+
+    if (!snap.exists) {
+      throw new Error('Match not found');
+    }
+
+    // Reset game state only — players and turnOrder are left unchanged.
+    transaction.update(ref, {
+      boardState: buildInitialBoardState(),
+      currentTurn: TURN_ORDER[0],
+      winner: null,
+      moveHistory: [],
+      status: 'in_progress',
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
   });
 };
 

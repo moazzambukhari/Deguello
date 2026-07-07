@@ -1,5 +1,19 @@
 import { BoardPiece, House } from '../components/board/types';
 
+/** Practice = offline/local state. Multiplayer = Firestore-synchronized. */
+export type GameMode = 'practice' | 'multiplayer';
+
+export type GameRouteParams = {
+  matchId?: string;
+  mode?: GameMode;
+};
+
+/** Infer mode from navigation params — matchId implies multiplayer. */
+export function resolveGameMode(params?: GameRouteParams): GameMode {
+  if (params?.mode) return params.mode;
+  return params?.matchId ? 'multiplayer' : 'practice';
+}
+
 export type MoveKind = 'quiet' | 'capture' | 'promotion';
 
 export type BoardMove = {

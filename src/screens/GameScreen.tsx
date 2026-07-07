@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 
 import {
     Alert,
@@ -18,6 +18,8 @@ import type { RouteProp } from '@react-navigation/native';
 
 import type { MainStackParamList } from '../navigation/types';
 
+import { AuthContext } from '../navigation/AuthContext';
+
 
 
 import ChatModal from '../components/ChatModal';
@@ -28,8 +30,6 @@ import {
     DEFAULT_PLAYERS,
     fileToCol,
     getZone,
-    House,
-    Move,
     PlayerPanel,
     rankToRow,
     ZONE_LABELS
@@ -38,13 +38,7 @@ import {
 import {
     applyMove,
 
-    BoardMove,
-
-    createInitialPieces,
-
     findMoveToSquare,
-
-    getActiveHouse,
 
     getHighlightSquares,
 
@@ -52,9 +46,14 @@ import {
 
     pieceAtLabel,
 
+    boardMoveToFirestoreMove,
+
+    resolveGameMode,
+
+    useGameController,
+
     type MoveContext,
 } from '../game';
-import { makeMove, resetMatch, subscribeToMatch } from '../firebase/matches';
 
 
 
@@ -67,37 +66,33 @@ const SQUARE_SIZE = Math.floor(Math.min(width - 24, height * 0.40) / 14);
 export default function GameScreen() {
     const navigation = useNavigation();
     const route = useRoute<RouteProp<MainStackParamList, 'Game'>>();
-    const matchId = route.params.matchId;
+    const matchId = route.params?.matchId;
     const players = route.params?.players ?? DEFAULT_PLAYERS;
 
+    const mode = resolveGameMode({ matchId, mode: route.params?.mode });
+
+    // The controller owns all mode-specific state + persistence. This screen
+    // only deals with selection and rendering.
+    const { pieces, currentTurn, commitMove, reset } = useGameController(
+        mode,
+        matchId,
+    );
+
+    const { userToken } = useContext(AuthContext);
+
     const [showChat, setShowChat] = useState(false);
-
-    const [pieces, setPieces] = useState(createInitialPieces());
-
-    const [currentTurn, setCurrentTurn] = useState<House>('white');
 
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const activeHouse = currentTurn;
 
+    // The house this device controls. Practice is hotseat (you move everyone);
+    // multiplayer restricts you to your own seat.
+    const myHouse = useMemo(
+        () => players.find(player => player.id === userToken)?.house,
+        [players, userToken],
+    );
 
-
-
-    useEffect(() => {
-        const unsubscribe = subscribeToMatch(
-            matchId,
-            match => {
-                if (!match) return;
-
-                setPieces(match.boardState);
-
-                setCurrentTurn(match.currentTurn);
-            },
-        );
-
-        return unsubscribe;
-    }, [matchId]);
-
-
+    const isMyTurn = mode === 'practice' || currentTurn === myHouse;
 
 
 
@@ -146,22 +141,12 @@ export default function GameScreen() {
     }, [selectedSquare]);
 
 
-    const boardMoveToFirestoreMove = (move: BoardMove, house: House): Move => ({
-        pieceId: move.pieceId,
-        from: {
-            file: move.from[0],
-            rank: Number(move.from.slice(1)),
-        },
-        to: {
-            file: move.to[0],
-            rank: Number(move.to.slice(1)),
-        },
-        house,
-        capturedPieceId: move.capturedPieceId,
-        createdAt: Date.now(),
-    });
-
     const handleSquarePress = async (label: string) => {
+
+        // In multiplayer you can only act on your own turn/house.
+        if (!isMyTurn) {
+            return;
+        }
 
         const pendingMove = findMoveToSquare(validMoves, label);
 
@@ -169,8 +154,7 @@ export default function GameScreen() {
         if (selectedSquare && pendingMove) {
             const newBoard = applyMove(pieces, pendingMove);
 
-            await makeMove(
-                matchId,
+            await commitMove(
                 newBoard,
                 boardMoveToFirestoreMove(pendingMove, activeHouse),
             );
@@ -197,7 +181,7 @@ export default function GameScreen() {
 
 
     const resetBoard = async () => {
-        await resetMatch(matchId);
+        await reset();
         setSelectedSquare(null);
     };
 

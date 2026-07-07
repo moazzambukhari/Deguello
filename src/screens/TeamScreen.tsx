@@ -84,6 +84,7 @@ export const TeamScreen = ({ navigation, route }: Props) => {
 
             navigation.replace('Game', {
                 matchId,
+                mode: 'multiplayer',
                 players: matchPlayersToPlayerInfo(match.players),
             });
         };
