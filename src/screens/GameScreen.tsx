@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import {
     Alert,
@@ -13,7 +13,10 @@ import {
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+
+import type { MainStackParamList } from '../navigation/types';
 
 
 
@@ -25,6 +28,8 @@ import {
     DEFAULT_PLAYERS,
     fileToCol,
     getZone,
+    House,
+    Move,
     PlayerPanel,
     rankToRow,
     ZONE_LABELS
@@ -32,6 +37,8 @@ import {
 
 import {
     applyMove,
+
+    BoardMove,
 
     createInitialPieces,
 
@@ -47,6 +54,7 @@ import {
 
     type MoveContext,
 } from '../game';
+import { makeMove, resetMatch, subscribeToMatch } from '../firebase/matches';
 
 
 
@@ -57,20 +65,39 @@ const SQUARE_SIZE = Math.floor(Math.min(width - 24, height * 0.40) / 14);
 
 
 export default function GameScreen() {
-
     const navigation = useNavigation();
+    const route = useRoute<RouteProp<MainStackParamList, 'Game'>>();
+    const matchId = route.params.matchId;
+    const players = route.params?.players ?? DEFAULT_PLAYERS;
 
     const [showChat, setShowChat] = useState(false);
 
-    const [pieces, setPieces] = useState(createInitialPieces);
+    const [pieces, setPieces] = useState(createInitialPieces());
+
+    const [currentTurn, setCurrentTurn] = useState<House>('white');
 
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-
-    const [turnIndex, setTurnIndex] = useState(0);
-
+    const activeHouse = currentTurn;
 
 
-    const activeHouse = getActiveHouse(turnIndex);
+
+
+    useEffect(() => {
+        const unsubscribe = subscribeToMatch(
+            matchId,
+            match => {
+                if (!match) return;
+
+                setPieces(match.boardState);
+
+                setCurrentTurn(match.currentTurn);
+            },
+        );
+
+        return unsubscribe;
+    }, [matchId]);
+
+
 
 
 
@@ -119,63 +146,59 @@ export default function GameScreen() {
     }, [selectedSquare]);
 
 
+    const boardMoveToFirestoreMove = (move: BoardMove, house: House): Move => ({
+        pieceId: move.pieceId,
+        from: {
+            file: move.from[0],
+            rank: Number(move.from.slice(1)),
+        },
+        to: {
+            file: move.to[0],
+            rank: Number(move.to.slice(1)),
+        },
+        house,
+        capturedPieceId: move.capturedPieceId,
+        createdAt: Date.now(),
+    });
 
-    const handleSquarePress = (label: string) => {
+    const handleSquarePress = async (label: string) => {
 
         const pendingMove = findMoveToSquare(validMoves, label);
 
 
-
         if (selectedSquare && pendingMove) {
+            const newBoard = applyMove(pieces, pendingMove);
 
-            setPieces((prev) => applyMove(prev, pendingMove));
+            await makeMove(
+                matchId,
+                newBoard,
+                boardMoveToFirestoreMove(pendingMove, activeHouse),
+            );
 
             setSelectedSquare(null);
-
-            setTurnIndex((prev) => prev + 1);
-
             return;
-
         }
-
-
 
         if (selectedSquare === label) {
-
             setSelectedSquare(null);
-
             return;
-
         }
-
-
 
         const piece = pieceAtLabel(pieces, label);
 
         if (piece?.house === activeHouse) {
-
             setSelectedSquare(label);
-
             return;
-
         }
 
-
-
         setSelectedSquare(null);
-
     };
 
 
 
-    const resetBoard = () => {
-
-        setPieces(createInitialPieces());
-
+    const resetBoard = async () => {
+        await resetMatch(matchId);
         setSelectedSquare(null);
-
-        setTurnIndex(0);
-
     };
 
 
@@ -230,7 +253,7 @@ export default function GameScreen() {
 
                         <PlayerPanel
 
-                            player={DEFAULT_PLAYERS[2]}
+                            player={players[2]}
 
                             isActive={activeHouse === 'blue'}
                             turn={activeHouse === 'blue'}
@@ -244,7 +267,7 @@ export default function GameScreen() {
 
                         <PlayerPanel
 
-                            player={DEFAULT_PLAYERS[3]}
+                            player={players[3]}
 
                             isActive={activeHouse === 'black'}
                             turn={activeHouse === 'black'}
@@ -306,7 +329,7 @@ export default function GameScreen() {
 
                         <PlayerPanel
 
-                            player={DEFAULT_PLAYERS[0]}
+                            player={players[0]}
 
                             isActive={activeHouse === 'white'}
                             turn={activeHouse === 'white'}
@@ -320,7 +343,7 @@ export default function GameScreen() {
 
                         <PlayerPanel
 
-                            player={DEFAULT_PLAYERS[1]}
+                            player={players[1]}
 
                             isActive={activeHouse === 'red'}
                             turn={activeHouse === 'red'}

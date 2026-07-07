@@ -21,7 +21,7 @@ export default function MainStack() {
             {/* Other protected screens */}
             <Stack.Screen
                 name="Team"
-                component={TeamScreen}
+                component={TeamScreen as any}
             />
 
             <Stack.Screen

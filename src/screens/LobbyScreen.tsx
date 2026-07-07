@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Image,
@@ -15,17 +15,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { createOrJoinMatch } from '../firebase/matches';
+import { getCurrentUserId, getUserDocument } from '../firebase/users';
+import { UserDocument } from '../firebase/types';
 
 type MatchVisibility = 'public' | 'private';
 type AiDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
 
-const MOCK_PLAYER = {
-    name: 'Commander',
-    rank: 'Gold III',
-    wins: 42,
-    losses: 18,
-    elo: 1487,
-};
+
 
 const VISIBILITY_OPTIONS: { key: MatchVisibility; label: string; icon: string }[] =
     [
@@ -40,6 +37,22 @@ const AI_DIFFICULTY_OPTIONS: { key: AiDifficulty; label: string }[] = [
     { key: 'expert', label: 'Expert' },
 ];
 
+const getRank = (elo: number) => {
+
+    if (elo >= 1800) return 'Diamond';
+
+    if (elo >= 1600) return 'Platinum';
+
+    if (elo >= 1400) return 'Gold';
+
+    if (elo >= 1200) return 'Silver';
+
+    if (elo >= 1000) return 'Bronze';
+
+    return 'Rookie';
+
+};
+
 export default function LobbyScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
     const insets = useSafeAreaInsets();
@@ -48,6 +61,27 @@ export default function LobbyScreen() {
 
     const [visibility, setVisibility] = useState<MatchVisibility>('public');
     const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
+    const [user, setUser] = useState<UserDocument | null>(null);
+
+    useEffect(() => {
+
+        const loadUser = async () => {
+
+            const uid = getCurrentUserId();
+
+            if (!uid) {
+                return;
+            }
+
+            const data = await getUserDocument(uid);
+
+            setUser(data);
+
+        };
+
+        loadUser();
+
+    }, []);
 
     const showLobbyToast = (title: string, message: string) => {
         Alert.alert(title, message);
@@ -64,9 +98,42 @@ export default function LobbyScreen() {
         showLobbyToast('Join Match', 'Enter a room code to join (coming soon).');
     };
 
-    const handleQuickMatch = () => {
-        navigation.navigate('Team');
+    const handleQuickMatch = async () => {
+        try {
+
+            const uid = getCurrentUserId();
+
+            if (!uid) {
+                Alert.alert('Error', 'Please login first.');
+                return;
+            }
+
+            const user = await getUserDocument(uid);
+
+            if (!user) {
+                Alert.alert('Error', 'User profile not found.');
+                return;
+            }
+
+            const matchId = await createOrJoinMatch(
+                user,
+                'quick',
+                {
+                    visibility: 'public',
+                    aiDifficulty,
+                },
+            );
+
+            navigation.navigate('Team', {
+                matchId,
+            });
+
+        } catch (e) {
+            console.log(e);
+            Alert.alert('Error', 'Unable to join match.');
+        }
     };
+
 
     const handleInviteFriends = () => {
         showLobbyToast(
@@ -119,27 +186,33 @@ export default function LobbyScreen() {
                                 style={styles.avatarRing}
                             >
                                 <Image
-                                    source={require('../assets/images/avatar2.png')}
+                                    source={
+                                        user?.avatar
+                                            ? { uri: user.avatar }
+                                            : require('../assets/images/avatar2.png')
+                                    }
                                     style={styles.avatar}
                                 />
                             </LinearGradient>
                             <View style={styles.rankBadge}>
                                 <Ionicons name="shield" size={10} color="#00146D" />
                                 <Text style={styles.rankBadgeText}>
-                                    {MOCK_PLAYER.rank}
+                                    {getRank(user?.elo ?? 1000)}
                                 </Text>
                             </View>
                         </View>
 
                         <View style={styles.profileInfo}>
-                            <Text style={styles.playerName}>{MOCK_PLAYER.name}</Text>
+                            <Text style={styles.playerName}>
+                                {user?.fullName ?? 'Player'}
+                            </Text>
                             <Text style={styles.playerSubtitle}>
                                 Deguello Strategist
                             </Text>
                             <View style={styles.eloPill}>
                                 <Ionicons name="trophy" size={12} color="#FFD700" />
                                 <Text style={styles.eloText}>
-                                    {MOCK_PLAYER.elo} ELO
+                                    {user?.elo ?? 1000} ELO
                                 </Text>
                             </View>
                         </View>
@@ -148,28 +221,28 @@ export default function LobbyScreen() {
                     <View style={styles.statsRow}>
                         <StatBlock
                             label="Rank"
-                            value={MOCK_PLAYER.rank}
+                            value="Rookie"
                             icon="ribbon-outline"
                             accent="#FFD700"
                         />
                         <View style={styles.statDivider} />
                         <StatBlock
                             label="Wins"
-                            value={String(MOCK_PLAYER.wins)}
+                            value={String(user?.wins ?? 0)}
                             icon="checkmark-circle-outline"
                             accent="#4CAF50"
                         />
                         <View style={styles.statDivider} />
                         <StatBlock
                             label="Losses"
-                            value={String(MOCK_PLAYER.losses)}
+                            value={String(user?.losses ?? 0)}
                             icon="close-circle-outline"
                             accent="#E53935"
                         />
                         <View style={styles.statDivider} />
                         <StatBlock
                             label="ELO"
-                            value={String(MOCK_PLAYER.elo)}
+                            value={String(user?.elo ?? 1000)}
                             icon="trending-up-outline"
                             accent="#42A5F5"
                         />
@@ -206,7 +279,7 @@ export default function LobbyScreen() {
                                 style={[
                                     styles.difficultyChip,
                                     aiDifficulty === option.key &&
-                                        styles.difficultyChipActive,
+                                    styles.difficultyChipActive,
                                 ]}
                                 onPress={() => setAiDifficulty(option.key)}
                                 activeOpacity={0.85}
@@ -215,7 +288,7 @@ export default function LobbyScreen() {
                                     style={[
                                         styles.difficultyText,
                                         aiDifficulty === option.key &&
-                                            styles.difficultyTextActive,
+                                        styles.difficultyTextActive,
                                     ]}
                                 >
                                     {option.label}
@@ -268,7 +341,7 @@ export default function LobbyScreen() {
                         color="rgba(255,255,255,0.5)"
                     />
                     <Text style={styles.footerNoteText}>
-                        Lobby is UI preview only — no live matchmaking yet.
+                        Find players around the world and start your battle.
                     </Text>
                 </View>
             </ScrollView>

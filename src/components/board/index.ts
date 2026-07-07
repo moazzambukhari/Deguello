@@ -8,3 +8,4 @@ export { default as CoordinateLabel } from './CoordinateLabel';
 
 export * from './types';
 export * from './boardLayout';
+export * from './initialSetup';

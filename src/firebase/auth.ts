@@ -1,13 +1,14 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
+import { createNotification } from './notifications';
+
 export const signUp = async (
   fullName: string,
   email: string,
   phone: string,
   password: string,
 ) => {
-  // Create Firebase Auth user
   const credential = await auth().createUserWithEmailAndPassword(
     email,
     password,
@@ -15,21 +16,50 @@ export const signUp = async (
 
   const user = credential.user;
 
-  // Update display name
   await user.updateProfile({
     displayName: fullName,
   });
 
-  // Save extra information in Firestore
   await firestore().collection('users').doc(user.uid).set({
     uid: user.uid,
     fullName,
     email,
     phone,
     avatar: '',
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    elo: 1200,
     createdAt: firestore.FieldValue.serverTimestamp(),
     status: 'online',
   });
 
+  await createNotification({
+    userId: user.uid,
+    title: 'Welcome to Deguello',
+    message: 'Your account is ready. Jump into a match from the home screen.',
+    type: 'system',
+    read: false,
+  });
+
   return user;
+};
+
+export const signIn = async (email: string, password: string) =>
+  auth().signInWithEmailAndPassword(email.trim(), password);
+
+export const signOut = async () => {
+  const uid = auth().currentUser?.uid;
+  if (uid) {
+    await firestore().collection('users').doc(uid).update({
+      status: 'offline',
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  await auth().signOut();
+};
+
+export const sendPasswordReset = async (email: string) => {
+  await auth().sendPasswordResetEmail(email.trim());
 };
