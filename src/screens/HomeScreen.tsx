@@ -14,15 +14,15 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { createOrJoinMatch } from '../firebase/matches';
-import { getCurrentUserId, getUserDocument } from '../firebase/users';
+import { createAiMatch } from '../firebase/matches';
+import { getAvailableUsers, getCurrentUserId, getUserDocument } from '../firebase/users';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
 
-  // Play vs AI: create a room filled with AI opponents (host + 3 AI = ready),
+  // Play vs AI: fetch online users from Firebase, fill open slots with AI,
   // then hand off to the Team screen with the real matchId.
   const handlePlayVsAi = async () => {
     try {
@@ -38,8 +38,9 @@ export default function HomeScreen() {
         return;
       }
 
-      const matchId = await createOrJoinMatch(user, 'private', {
-        visibility: 'private',
+      const availableUsers = await getAvailableUsers(uid);
+
+      const matchId = await createAiMatch(user, availableUsers.slice(0, 3), {
         aiDifficulty: 'medium',
       });
 

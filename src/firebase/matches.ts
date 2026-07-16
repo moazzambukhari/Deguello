@@ -113,6 +113,45 @@ export const matchPlayersToPlayerInfo = (
       : require('../assets/images/avatar2.png'),
   }));
 
+export const createAiMatch = async (
+  host: UserDocument,
+  availableUsers: UserDocument[] = [],
+  options: {
+    aiDifficulty?: string;
+  } = {},
+) => {
+  const hostPlayer = toMatchPlayer(host, 'white');
+  const players: MatchPlayer[] = [hostPlayer];
+  const openHouses = HOUSES.slice(1);
+
+  availableUsers.slice(0, 3).forEach((opponent, index) => {
+    players.push(toMatchPlayer(opponent, openHouses[index]));
+  });
+
+  openHouses.slice(availableUsers.length).forEach((house, index) => {
+    players.push(createAiPlayer(house, availableUsers.length + index));
+  });
+
+  const docRef = await matchesCollection().add({
+    hostId: host.uid,
+    status: 'ready',
+    players,
+    visibility: 'private',
+    aiDifficulty: options.aiDifficulty ?? 'medium',
+    mode: 'private',
+    roomCode: generateRoomCode(),
+    currentTurn: TURN_ORDER[0],
+    turnOrder: TURN_ORDER,
+    boardState: buildInitialBoardState(),
+    winner: null,
+    moveHistory: [],
+    createdAt: firestore.FieldValue.serverTimestamp(),
+    updatedAt: firestore.FieldValue.serverTimestamp(),
+  });
+
+  return docRef.id;
+};
+
 export const createMatch = async (
   host: UserDocument,
   mode: MatchMode,

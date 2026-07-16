@@ -45,8 +45,19 @@ export const signUp = async (
   return user;
 };
 
-export const signIn = async (email: string, password: string) =>
-  auth().signInWithEmailAndPassword(email.trim(), password);
+export const signIn = async (email: string, password: string) => {
+  const credential = await auth().signInWithEmailAndPassword(
+    email.trim(),
+    password,
+  );
+
+  await firestore().collection('users').doc(credential.user.uid).update({
+    status: 'online',
+    updatedAt: firestore.FieldValue.serverTimestamp(),
+  });
+
+  return credential;
+};
 
 export const signOut = async () => {
   const uid = auth().currentUser?.uid;

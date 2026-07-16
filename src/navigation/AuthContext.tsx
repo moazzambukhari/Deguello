@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useState } from 'react';
 import auth from '@react-native-firebase/auth';
 
-import { subscribeToUser } from '../firebase/users';
+import { subscribeToUser, updateUserStatus } from '../firebase/users';
 import type { UserDocument } from '../firebase/types';
 
 type AuthContextType = {
@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (user) {
                 setUserToken(user.uid);
+                updateUserStatus(user.uid, 'online').catch(() => {});
                 profileUnsubscribe = subscribeToUser(user.uid, setUserProfile);
             } else {
                 setUserToken(null);

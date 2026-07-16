@@ -56,3 +56,38 @@ export const updateUserStats = async (
     updatedAt: firestore.FieldValue.serverTimestamp(),
   });
 };
+
+export const getAvailableUsers = async (
+  excludeUid?: string,
+): Promise<UserDocument[]> => {
+  const snapshot = await usersCollection()
+    .where('status', '==', 'online')
+    .limit(20)
+    .get();
+
+  return snapshot.docs
+    .map(doc => ({ uid: doc.id, ...(doc.data() as Omit<UserDocument, 'uid'>) }))
+    .filter(user => user.uid !== excludeUid);
+};
+
+export const subscribeToAvailableUsers = (
+  excludeUid: string | undefined,
+  onUpdate: (users: UserDocument[]) => void,
+  onError?: (error: Error) => void,
+) =>
+  usersCollection()
+    .where('status', '==', 'online')
+    .limit(20)
+    .onSnapshot(
+      snapshot => {
+        const users = snapshot.docs
+          .map(doc => ({
+            uid: doc.id,
+            ...(doc.data() as Omit<UserDocument, 'uid'>),
+          }))
+          .filter(user => user.uid !== excludeUid);
+
+        onUpdate(users);
+      },
+      error => onError?.(error),
+    );
